@@ -1,5 +1,4 @@
 .idea
 *.iml
 bin
-*.json
-*.txt
+config.json

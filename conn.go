@@ -16,63 +16,60 @@ type Request struct {
 	data    []byte
 }
 
-func handleConnect(client net.Conn) {
-	defer client.Close()
+func handleConnect(conn net.Conn) {
+	defer conn.Close()
 
-	var buff [1024]byte
-	readN, err := client.Read(buff[:])
+	req, err := parseRequest(conn)
 	if err != nil {
 		return
 	}
-	data := buff[:readN]
 
-	addr, isHttps := parseRequest(string(data))
-	if isHttps {
-		fmt.Fprint(client, "HTTP/1.1 200 Connection Established\r\n\r\n")
+	if req.isHttps {
+		fmt.Fprint(conn, "HTTP/1.1 200 Connection Established\r\n\r\n")
 	}
 
-	if block.contains(addr) {
-		doProxyConnect(client, addr, isHttps, data)
+	if block.contains(req.addr) {
+		doProxyConnect(req)
 	} else {
-		doDirectConnect(client, addr, isHttps, data)
+		doDirectConnect(req)
 	}
 }
 
 // 直连
-func doDirectConnect(client net.Conn, addr string, isHttps bool, data []byte) {
-	log.Println("dr", addr)
+func doDirectConnect(req *Request) {
+	log.Println("dr", req.addr)
 
-	remote, err := net.DialTimeout("tcp", addr, 2*time.Second)
+	remote, err := net.DialTimeout("tcp", req.addr, 2*time.Second)
 	if err != nil {
-		block.put(addr)
-		log.Println("dr", addr, err)
+		block.put(req.addr)
+		log.Println("dr", req.addr, err)
 		return
 	}
 
-	if !isHttps {
-		remote.Write(data)
+	if !req.isHttps {
+		remote.Write(req.data)
 	}
 
-	go copyClientToRemote(addr, client, remote, true)
-	copyRemoteToClient(addr, remote, client, true)
+	go copyClientToRemote(req.addr, req.conn, remote, true)
+	copyRemoteToClient(req.addr, remote, req.conn, true)
 }
 
 // 代理
-func doProxyConnect(client net.Conn, addr string, isHttps bool, data []byte) {
-	log.Println("ss", addr)
+func doProxyConnect(req *Request) {
+	log.Println("ss", req.addr)
 
-	remote, err := ss.connect(addr)
+	remote, err := ss.connect(req.addr)
 	if err != nil {
-		log.Println("ss", addr, err)
+		log.Println("ss", req.addr, err)
 		return
 	}
 
-	if !isHttps {
-		remote.Write(data)
+	if !req.isHttps {
+		remote.Write(req.data)
 	}
 
-	go copyClientToRemote(addr, client, remote, false)
-	copyRemoteToClient(addr, remote, client, false)
+	go copyClientToRemote(req.addr, req.conn, remote, false)
+	copyRemoteToClient(req.addr, remote, req.conn, false)
 }
 
 func copyClientToRemote(addr string, client, remote net.Conn, isDirect bool) {
@@ -123,12 +120,19 @@ func copyRemoteToClient(addr string, remote, client net.Conn, isDirect bool) {
 }
 
 // 解析请求信息
-func parseRequest(text string) (string, bool) {
+func parseRequest(client net.Conn) (*Request, error) {
+
+	var buff [1024]byte
+	readN, err := client.Read(buff[:])
+	if err != nil {
+		return nil, err
+	}
+	data := buff[:readN]
 
 	var addr string
 	var isHttps bool
 
-	for _, line := range strings.Split(text, "\r\n") {
+	for _, line := range strings.Split(string(data), "\r\n") {
 		if strings.HasPrefix(line, "CONNECT") {
 			isHttps = true
 			continue
@@ -147,5 +151,12 @@ func parseRequest(text string) (string, bool) {
 		}
 	}
 
-	return addr, isHttps
+	request := &Request{
+		conn:    client,
+		addr:    addr,
+		host:    "",
+		isHttps: isHttps,
+		data:    data,
+	}
+	return request, nil
 }
