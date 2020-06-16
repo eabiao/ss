@@ -15,13 +15,13 @@ func initBlock() *Block {
 	return &Block{make(map[string]bool)}
 }
 
-func (b *Block) put(addr string) {
+func (b *Block) put(domain string) {
 	blockMutex.Lock()
 	defer blockMutex.Unlock()
 
-	b.m[addr] = true
+	b.m[domain] = true
 }
 
-func (b *Block) contains(addr string) bool {
-	return b.m[addr]
+func (b *Block) contains(domain string) bool {
+	return b.m[domain]
 }

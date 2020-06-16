@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/weppos/publicsuffix-go/publicsuffix"
 	"log"
 	"net"
 	"strings"
@@ -11,7 +12,7 @@ import (
 type Request struct {
 	conn    net.Conn
 	addr    string
-	host    string
+	domain  string
 	isHttps bool
 	data    []byte
 }
@@ -28,7 +29,7 @@ func handleConnect(conn net.Conn) {
 		fmt.Fprint(conn, "HTTP/1.1 200 Connection Established\r\n\r\n")
 	}
 
-	if block.contains(req.addr) {
+	if block.contains(req.domain) {
 		doProxyConnect(req)
 	} else {
 		doDirectConnect(req)
@@ -41,17 +42,19 @@ func doDirectConnect(req *Request) {
 
 	remote, err := net.DialTimeout("tcp", req.addr, 2*time.Second)
 	if err != nil {
-		block.put(req.addr)
+		block.put(req.domain)
 		log.Println("dr", req.addr, err)
 		return
 	}
+
+	defer remote.Close()
 
 	if !req.isHttps {
 		remote.Write(req.data)
 	}
 
-	go copyClientToRemote(req.addr, req.conn, remote, true)
-	copyRemoteToClient(req.addr, remote, req.conn, true)
+	go copyClientToRemote(req, remote, true)
+	copyRemoteToClient(req, remote, true)
 }
 
 // 代理
@@ -64,19 +67,21 @@ func doProxyConnect(req *Request) {
 		return
 	}
 
+	defer remote.Close()
+
 	if !req.isHttps {
 		remote.Write(req.data)
 	}
 
-	go copyClientToRemote(req.addr, req.conn, remote, false)
-	copyRemoteToClient(req.addr, remote, req.conn, false)
+	go copyClientToRemote(req, remote, false)
+	copyRemoteToClient(req, remote, false)
 }
 
-func copyClientToRemote(addr string, client, remote net.Conn, isDirect bool) {
+func copyClientToRemote(req *Request, remote net.Conn, isDirect bool) {
 	var buff [2048]byte
 
 	for {
-		readN, err := client.Read(buff[:])
+		readN, err := req.conn.Read(buff[:])
 		if err != nil {
 			return
 		}
@@ -84,17 +89,17 @@ func copyClientToRemote(addr string, client, remote net.Conn, isDirect bool) {
 		_, err = remote.Write(buff[0:readN])
 		if err != nil {
 			if isDirect {
-				block.put(addr)
-				log.Println("dr write remote", addr, err)
+				block.put(req.domain)
+				log.Println("dr write remote", req.addr, err)
 			} else {
-				log.Println("ss write remote", addr, err)
+				log.Println("ss write remote", req.addr, err)
 			}
 			return
 		}
 	}
 }
 
-func copyRemoteToClient(addr string, remote, client net.Conn, isDirect bool) {
+func copyRemoteToClient(req *Request, remote net.Conn, isDirect bool) {
 	var buff [2048]byte
 
 	for {
@@ -103,16 +108,16 @@ func copyRemoteToClient(addr string, remote, client net.Conn, isDirect bool) {
 			opErr, ok := err.(*net.OpError)
 			if ok {
 				if isDirect {
-					block.put(addr)
-					log.Println("dr read remote", addr, opErr.Err)
+					block.put(req.domain)
+					log.Println("dr read remote", req.addr, opErr.Err)
 				} else {
-					log.Println("ss read remote", addr, opErr.Err)
+					log.Println("ss read remote", req.addr, opErr.Err)
 				}
 			}
 			return
 		}
 
-		_, err = client.Write(buff[0:readN])
+		_, err = req.conn.Write(buff[0:readN])
 		if err != nil {
 			return
 		}
@@ -151,10 +156,12 @@ func parseRequest(client net.Conn) (*Request, error) {
 		}
 	}
 
+	domain, _ := publicsuffix.Domain(addr)
+
 	request := &Request{
 		conn:    client,
 		addr:    addr,
-		host:    "",
+		domain:  domain,
 		isHttps: isHttps,
 		data:    data,
 	}
