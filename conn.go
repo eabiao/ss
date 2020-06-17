@@ -2,21 +2,19 @@ package main
 
 import (
 	"fmt"
-	"github.com/weppos/publicsuffix-go/publicsuffix"
 	"log"
 	"net"
 	"strings"
-	"time"
 )
 
 type Request struct {
 	conn    net.Conn
 	addr    string
-	domain  string
 	isHttps bool
 	data    []byte
 }
 
+// 处理请求
 func handleConnect(conn net.Conn) {
 	defer conn.Close()
 
@@ -29,41 +27,16 @@ func handleConnect(conn net.Conn) {
 		fmt.Fprint(conn, "HTTP/1.1 200 Connection Established\r\n\r\n")
 	}
 
-	if block.contains(req.domain) {
-		doProxyConnect(req)
-	} else {
-		doDirectConnect(req)
-	}
+	doProxyConnect(req)
 }
 
-// 直连
-func doDirectConnect(req *Request) {
-	log.Println("dr", req.addr)
-
-	remote, err := net.DialTimeout("tcp", req.addr, 2*time.Second)
-	if err != nil {
-		block.put(req.domain)
-		log.Println("dr", req.addr, err)
-		return
-	}
-
-	defer remote.Close()
-
-	if !req.isHttps {
-		remote.Write(req.data)
-	}
-
-	go copyClientToRemote(req, remote, true)
-	copyRemoteToClient(req, remote, true)
-}
-
-// 代理
+// 代理连接
 func doProxyConnect(req *Request) {
-	log.Println("ss", req.addr)
+	log.Println(req.addr)
 
 	remote, err := ss.connect(req.addr)
 	if err != nil {
-		log.Println("ss", req.addr, err)
+		log.Println(req.addr, err)
 		return
 	}
 
@@ -73,51 +46,22 @@ func doProxyConnect(req *Request) {
 		remote.Write(req.data)
 	}
 
-	go copyClientToRemote(req, remote, false)
-	copyRemoteToClient(req, remote, false)
+	go copyStream(req.conn, remote)
+	copyStream(remote, req.conn)
 }
 
-func copyClientToRemote(req *Request, remote net.Conn, isDirect bool) {
-	var buff [2048]byte
+// 流复制
+func copyStream(src, dst net.Conn) {
+	var buff = connBuff.Get()
+	defer connBuff.Put(buff)
 
 	for {
-		readN, err := req.conn.Read(buff[:])
+		readN, err := src.Read(buff[:])
 		if err != nil {
 			return
 		}
 
-		_, err = remote.Write(buff[0:readN])
-		if err != nil {
-			if isDirect {
-				block.put(req.domain)
-				log.Println("dr write remote", req.addr, err)
-			} else {
-				log.Println("ss write remote", req.addr, err)
-			}
-			return
-		}
-	}
-}
-
-func copyRemoteToClient(req *Request, remote net.Conn, isDirect bool) {
-	var buff [2048]byte
-
-	for {
-		readN, err := remote.Read(buff[:])
-		if err != nil {
-			opErr, ok := err.(*net.OpError)
-			if ok {
-				if isDirect {
-					block.put(req.domain)
-					log.Println("dr read remote", req.addr, opErr.Err)
-				} else {
-					log.Println("ss read remote", req.addr, opErr.Err)
-				}
-			}
-			return
-		}
-
-		_, err = req.conn.Write(buff[0:readN])
+		_, err = dst.Write(buff[0:readN])
 		if err != nil {
 			return
 		}
@@ -127,7 +71,9 @@ func copyRemoteToClient(req *Request, remote net.Conn, isDirect bool) {
 // 解析请求信息
 func parseRequest(client net.Conn) (*Request, error) {
 
-	var buff [1024]byte
+	var buff = httpBuff.Get()
+	defer httpBuff.Put(buff)
+
 	readN, err := client.Read(buff[:])
 	if err != nil {
 		return nil, err
@@ -156,12 +102,9 @@ func parseRequest(client net.Conn) (*Request, error) {
 		}
 	}
 
-	domain, _ := publicsuffix.Domain(addr)
-
 	request := &Request{
 		conn:    client,
 		addr:    addr,
-		domain:  domain,
 		isHttps: isHttps,
 		data:    data,
 	}
