@@ -1,25 +1,26 @@
 package main
 
 var (
-	httpBuff = newBuffer(512, 1024)
-	connBuff = newBuffer(512, 4096)
+	httpBuff = newBuffPool(512, 1024)
+	connBuff = newBuffPool(512, 4096)
 )
 
 // 缓冲区池
-type Buffer struct {
+type BuffPool struct {
 	size int
 	list chan []byte
 }
 
-func newBuffer(n, size int) *Buffer {
-	return &Buffer{
+// 初始化缓冲区池
+func newBuffPool(n, size int) *BuffPool {
+	return &BuffPool{
 		size: size,
 		list: make(chan []byte, n),
 	}
 }
 
 // 获取缓冲区
-func (b *Buffer) Get() (buff []byte) {
+func (b *BuffPool) Get() (buff []byte) {
 	select {
 	case buff = <-b.list:
 	default:
@@ -29,7 +30,7 @@ func (b *Buffer) Get() (buff []byte) {
 }
 
 // 归还缓冲区
-func (b *Buffer) Put(buff []byte) {
+func (b *BuffPool) Put(buff []byte) {
 	if len(buff) != b.size {
 		panic("invalid buff size")
 	}

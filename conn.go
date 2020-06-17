@@ -7,7 +7,8 @@ import (
 	"strings"
 )
 
-type Request struct {
+// http请求
+type HttpRequest struct {
 	conn    net.Conn
 	addr    string
 	isHttps bool
@@ -31,7 +32,7 @@ func handleConnect(conn net.Conn) {
 }
 
 // 代理连接
-func doProxyConnect(req *Request) {
+func doProxyConnect(req *HttpRequest) {
 	log.Println(req.addr)
 
 	remote, err := ss.connect(req.addr)
@@ -69,7 +70,7 @@ func copyStream(src, dst net.Conn) {
 }
 
 // 解析请求信息
-func parseRequest(client net.Conn) (*Request, error) {
+func parseRequest(client net.Conn) (*HttpRequest, error) {
 
 	var buff = httpBuff.Get()
 	defer httpBuff.Put(buff)
@@ -102,7 +103,7 @@ func parseRequest(client net.Conn) (*Request, error) {
 		}
 	}
 
-	request := &Request{
+	request := &HttpRequest{
 		conn:    client,
 		addr:    addr,
 		isHttps: isHttps,
