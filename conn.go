@@ -37,7 +37,6 @@ func doProxyConnect(req *HttpRequest) {
 
 	remote, err := ss.connect(req.addr)
 	if err != nil {
-		log.Println(req.addr, err)
 		return
 	}
 
