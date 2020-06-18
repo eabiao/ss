@@ -1,6 +1,6 @@
 # ss
 
-vi config.json
+config.json
 ```
 {
     "listen": "127.0.0.1:7777",
