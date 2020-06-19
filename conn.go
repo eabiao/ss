@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"time"
 )
 
 // http请求
@@ -53,7 +54,11 @@ func doProxyConnect(req *HttpRequest) {
 // 流复制
 func copyStream(src, dst net.Conn) {
 	var buff = connBuff.Get()
-	defer connBuff.Put(buff)
+	defer func() {
+		connBuff.Put(buff)
+		src.SetDeadline(time.Now())
+		dst.SetDeadline(time.Now())
+	}()
 
 	for {
 		readN, err := src.Read(buff[:])
