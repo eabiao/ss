@@ -118,7 +118,7 @@ func parseRequest(client net.Conn) (*HttpRequest, error) {
 	port, _ := strconv.Atoi(addrParts[1])
 
 	// 解析地理位置
-	location := getHostLocation(host)
+	location := getDomainLocation(host)
 
 	request := &HttpRequest{
 		conn:     client,

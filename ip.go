@@ -4,6 +4,7 @@ import (
 	"github.com/ip2location/ip2location-go"
 	"log"
 	"net"
+	"strings"
 )
 
 var (
@@ -20,9 +21,9 @@ func initIPLocationDataBase() *ip2location.DB {
 }
 
 // 解析域名地理位置
-func getHostLocation(host string) string {
-	//判断是否为IP
-	if net.ParseIP(host) != nil {
+func getDomainLocation(host string) string {
+	// 判断是否为合法域名
+	if !strings.Contains(host, ".") || net.ParseIP(host) != nil {
 		return "-"
 	}
 
