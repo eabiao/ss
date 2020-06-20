@@ -4,16 +4,22 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 )
 
 // http请求
 type HttpRequest struct {
-	conn    net.Conn
-	addr    string
-	isHttps bool
-	data    []byte
+	conn          net.Conn
+	addr          string
+	isHttps       bool
+	data          []byte
+	host          string
+	port          int
+	ip            string
+	location      string
+	locationShort string
 }
 
 // 处理请求
@@ -24,19 +30,13 @@ func handleConnect(conn net.Conn) {
 	if err != nil {
 		return
 	}
+	log.Println(req.addr, req.locationShort)
 
 	if req.isHttps {
 		fmt.Fprint(conn, "HTTP/1.1 200 Connection Established\r\n\r\n")
 	}
 
-	doProxyConnect(req)
-}
-
-// 代理连接
-func doProxyConnect(req *HttpRequest) {
-	log.Println(req.addr)
-
-	remote, err := ss2.connect(req.addr)
+	remote, err := connectRemote(req)
 	if err != nil {
 		return
 	}
@@ -49,6 +49,14 @@ func doProxyConnect(req *HttpRequest) {
 
 	go copyStream(req.conn, remote)
 	copyStream(remote, req.conn)
+}
+
+// 连接远端
+func connectRemote(req *HttpRequest) (net.Conn, error) {
+	if req.locationShort == "-" || req.locationShort == "CN" {
+		return net.DialTimeout("tcp", req.addr, 2*time.Second)
+	}
+	return ss.connect(req.addr)
 }
 
 // 流复制
@@ -107,11 +115,31 @@ func parseRequest(client net.Conn) (*HttpRequest, error) {
 		}
 	}
 
+	addrParts := strings.SplitN(addr, ":", 2)
+	host := addrParts[0]
+	port, _ := strconv.Atoi(addrParts[1])
+
+	ip, err := getIPFromHost(host)
+	if err != nil {
+		return nil, err
+	}
+
+	// 解析地理位置
+	location, err := getIPLocation(ip)
+	if err != nil {
+		return nil, err
+	}
+
 	request := &HttpRequest{
-		conn:    client,
-		addr:    addr,
-		isHttps: isHttps,
-		data:    data,
+		conn:          client,
+		addr:          addr,
+		isHttps:       isHttps,
+		data:          data,
+		host:          host,
+		port:          port,
+		ip:            ip,
+		location:      location.Country_long,
+		locationShort: location.Country_short,
 	}
 	return request, nil
 }
