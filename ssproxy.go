@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	ss = initSSProxy()
+//ss = initSSProxy()
 )
 
 type SSProxy struct {

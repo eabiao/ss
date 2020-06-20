@@ -36,7 +36,7 @@ func handleConnect(conn net.Conn) {
 func doProxyConnect(req *HttpRequest) {
 	log.Println(req.addr)
 
-	remote, err := ss.connect(req.addr)
+	remote, err := ss2.connect(req.addr)
 	if err != nil {
 		return
 	}
@@ -63,11 +63,13 @@ func copyStream(src, dst net.Conn) {
 	for {
 		readN, err := src.Read(buff[:])
 		if err != nil {
+			log.Println(err)
 			return
 		}
 
 		_, err = dst.Write(buff[0:readN])
 		if err != nil {
+			log.Println(err)
 			return
 		}
 	}
