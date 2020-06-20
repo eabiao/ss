@@ -63,13 +63,11 @@ func copyStream(src, dst net.Conn) {
 	for {
 		readN, err := src.Read(buff[:])
 		if err != nil {
-			log.Println(err)
 			return
 		}
 
 		_, err = dst.Write(buff[0:readN])
 		if err != nil {
-			log.Println(err)
 			return
 		}
 	}
