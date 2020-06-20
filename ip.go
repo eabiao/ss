@@ -7,11 +7,11 @@ import (
 )
 
 var (
-	ipDB = initIPDataBase()
+	locationDB = initIPLocationDataBase()
 )
 
 // 初始化ip地理位置数据库
-func initIPDataBase() *ip2location.DB {
+func initIPLocationDataBase() *ip2location.DB {
 	db, err := ip2location.OpenDB("IP2LOCATION-LITE-DB1.BIN")
 	if err != nil {
 		log.Fatal("missing ip location database file")
@@ -19,20 +19,23 @@ func initIPDataBase() *ip2location.DB {
 	return db
 }
 
-// 解析IP地址
-func getIPFromHost(host string) (string, error) {
+// 解析域名地理位置
+func getHostLocation(host string) string {
+	//判断是否为IP
 	if net.ParseIP(host) != nil {
-		return host, nil
+		return "-"
 	}
 
+	// 解析IP
 	ips, err := net.LookupIP(host)
 	if err != nil {
-		return "", err
+		return "NONE"
 	}
-	return ips[0].String(), nil
-}
 
-// 解析地理位置
-func getIPLocation(ip string) (ip2location.IP2Locationrecord, error) {
-	return ipDB.Get_all(ip)
+	// 解析地理位置
+	location, err := locationDB.Get_all(ips[0].String())
+	if err != nil {
+		return "NONE"
+	}
+	return location.Country_short
 }
