@@ -1,7 +1,7 @@
 # ss
 根据IP地理位置智能分流的ss代理
 
-config.json
+配置文件 config.json
 ```
 {
     "listen": "127.0.0.1:7777",
