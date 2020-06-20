@@ -11,5 +11,5 @@ config.json
 }
 ```
 
-地理位置数据文件 IP2LOCATION-LITE-DB1.BIN 
+地理位置数据文件 IP2LOCATION-LITE-DB1.BIN  
 下载地址 https://lite.ip2location.com/database/ip-country
