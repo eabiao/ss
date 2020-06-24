@@ -27,7 +27,7 @@ func handleConnect(conn net.Conn) {
 	if err != nil {
 		return
 	}
-	log.Println(req.addr)
+	log.Println(req.host)
 
 	if req.isHttps {
 		fmt.Fprint(conn, "HTTP/1.1 200 Connection Established\r\n\r\n")
