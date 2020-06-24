@@ -1,6 +1,4 @@
 .idea
 *.iml
 bin
-config.json
-*.syso
-*.BIN
+*.json
