@@ -11,13 +11,12 @@ import (
 
 // http请求
 type HttpRequest struct {
-	conn     net.Conn
-	addr     string
-	isHttps  bool
-	data     []byte
-	host     string
-	port     int
-	location string
+	conn    net.Conn
+	addr    string
+	isHttps bool
+	data    []byte
+	host    string
+	port    int
 }
 
 // 处理请求
@@ -28,7 +27,7 @@ func handleConnect(conn net.Conn) {
 	if err != nil {
 		return
 	}
-	log.Println(req.addr, req.location)
+	log.Println(req.addr)
 
 	if req.isHttps {
 		fmt.Fprint(conn, "HTTP/1.1 200 Connection Established\r\n\r\n")
@@ -51,7 +50,8 @@ func handleConnect(conn net.Conn) {
 
 // 连接远端
 func connectRemote(req *HttpRequest) (net.Conn, error) {
-	if req.location == "-" || req.location == "CN" {
+	// 如果域名不合法或为IP地址，走直连
+	if !strings.Contains(req.host, ".") || net.ParseIP(req.host) != nil {
 		return net.DialTimeout("tcp", req.addr, 2*time.Second)
 	}
 	return ss.connect(req.addr)
@@ -117,17 +117,13 @@ func parseRequest(client net.Conn) (*HttpRequest, error) {
 	host := addrParts[0]
 	port, _ := strconv.Atoi(addrParts[1])
 
-	// 解析地理位置
-	location := getDomainLocation(host)
-
 	request := &HttpRequest{
-		conn:     client,
-		addr:     addr,
-		isHttps:  isHttps,
-		data:     data,
-		host:     host,
-		port:     port,
-		location: location,
+		conn:    client,
+		addr:    addr,
+		isHttps: isHttps,
+		data:    data,
+		host:    host,
+		port:    port,
 	}
 	return request, nil
 }
