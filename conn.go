@@ -47,7 +47,7 @@ func handleConnect(conn net.Conn) {
 	}
 
 	if err != nil {
-		log.Println("all connect fail, bad network", req.host)
+		log.Println("connect fail, bad network", req.host)
 	}
 }
 
