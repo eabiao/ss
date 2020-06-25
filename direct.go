@@ -15,10 +15,12 @@ var (
 	directMutex = sync.Mutex{}
 )
 
+// 直连
 type Direct struct {
 	directMap map[string]bool
 }
 
+// 初始化
 func initDirect() *Direct {
 	d := &Direct{
 		directMap: make(map[string]bool),
@@ -27,6 +29,7 @@ func initDirect() *Direct {
 	return d
 }
 
+// 加载文件
 func (d *Direct) loadDirect() {
 	file, err := os.Open("./direct.txt")
 	if err != nil {
@@ -50,6 +53,7 @@ func (d *Direct) loadDirect() {
 	}
 }
 
+// 判断是否为直连
 func (d *Direct) isDirect(host string) bool {
 	for direct := range d.directMap {
 		if strings.HasSuffix(host, direct) {
@@ -59,6 +63,7 @@ func (d *Direct) isDirect(host string) bool {
 	return false
 }
 
+// 增加记录
 func (d *Direct) addDirect(host string) {
 	directMutex.Lock()
 	defer directMutex.Unlock()
@@ -66,7 +71,8 @@ func (d *Direct) addDirect(host string) {
 	if d.directMap[host] {
 		return
 	}
-	log.Println("add direct", host)
+
+	log.Println("add", host)
 	d.directMap[host] = true
 
 	var list []string

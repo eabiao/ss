@@ -35,7 +35,6 @@ func handleConnect(conn net.Conn) {
 
 	target, err := net.DialTimeout("tcp", req.addr, 100*time.Millisecond)
 	if err == nil && connectTarget(req, target) == nil {
-		//log.Println("direct", req.host)
 		direct.addDirect(req.host)
 		return
 	}
@@ -43,7 +42,6 @@ func handleConnect(conn net.Conn) {
 	if !direct.isDirect(req.host) {
 		target, err = ss.connect(req.addr)
 		if err == nil && connectTarget(req, target) == nil {
-			//log.Println("proxy", req.host)
 			return
 		}
 	}
