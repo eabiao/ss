@@ -85,7 +85,7 @@ func (d *Direct) addDirect(host string) {
 		return
 	}
 
-	log.Println("add", host)
+	log.Println("dr", host)
 	d.recordMap[host] = true
 	d.saveDirect()
 }

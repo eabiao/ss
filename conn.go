@@ -42,12 +42,13 @@ func handleConnect(conn net.Conn) {
 	if !direct.isDirect(req.host) {
 		target, err = ss.connect(req.addr)
 		if err == nil && connectTarget(req, target) == nil {
+			log.Println("ss", req.host)
 			return
 		}
 	}
 
 	if err != nil {
-		log.Println("connect fail, bad network", req.host)
+		log.Println("connect fail", req.host)
 	}
 }
 
