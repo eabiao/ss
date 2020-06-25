@@ -17,15 +17,18 @@ var (
 
 // 直连
 type Direct struct {
-	directMap map[string]bool
+	defaultMap map[string]bool
+	recordMap  map[string]bool
 }
 
 // 初始化
 func initDirect() *Direct {
 	d := &Direct{
-		directMap: make(map[string]bool),
+		defaultMap: make(map[string]bool),
+		recordMap:  make(map[string]bool),
 	}
 	d.loadDirect()
+	d.saveDirect()
 	return d
 }
 
@@ -49,13 +52,23 @@ func (d *Direct) loadDirect() {
 			continue
 		}
 
-		d.directMap[host] = true
+		if strings.HasPrefix(host, "||") {
+			host = strings.TrimPrefix(host, "||")
+			d.defaultMap[host] = true
+		} else if !d.isDefaultDirect(host) {
+			d.recordMap[host] = true
+		}
 	}
 }
 
 // 判断是否为直连
 func (d *Direct) isDirect(host string) bool {
-	for direct := range d.directMap {
+	return d.isDefaultDirect(host) || d.recordMap[host]
+}
+
+// 判断是否为默认直连
+func (d *Direct) isDefaultDirect(host string) bool {
+	for direct := range d.defaultMap {
 		if strings.HasSuffix(host, direct) {
 			return true
 		}
@@ -68,18 +81,29 @@ func (d *Direct) addDirect(host string) {
 	directMutex.Lock()
 	defer directMutex.Unlock()
 
-	if d.directMap[host] {
+	if d.isDirect(host) {
 		return
 	}
 
 	log.Println("add", host)
-	d.directMap[host] = true
+	d.recordMap[host] = true
+	d.saveDirect()
+}
 
-	var list []string
-	for k := range d.directMap {
-		list = append(list, k)
+// 保存
+func (d *Direct) saveDirect() {
+	var defaultList []string
+	for k := range d.defaultMap {
+		defaultList = append(defaultList, "||"+k)
 	}
+	sort.Strings(defaultList)
 
-	sort.Strings(list)
-	ioutil.WriteFile("./direct.txt", []byte(strings.Join(list, "\n")), os.ModePerm)
+	var recordList []string
+	for k := range d.recordMap {
+		recordList = append(recordList, k)
+	}
+	sort.Strings(recordList)
+
+	directText := strings.Join(defaultList, "\n") + "\n" + strings.Join(recordList, "\n")
+	ioutil.WriteFile("./direct.txt", []byte(directText), os.ModePerm)
 }
