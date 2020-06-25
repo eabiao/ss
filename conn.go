@@ -35,6 +35,7 @@ func handleConnect(conn net.Conn) {
 
 	target, err := net.DialTimeout("tcp", req.addr, 100*time.Millisecond)
 	if err == nil && connectTarget(req, target) == nil {
+		log.Println("dr", req.host)
 		direct.addDirect(req.host)
 		return
 	}

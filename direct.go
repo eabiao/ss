@@ -85,8 +85,14 @@ func (d *Direct) addDirect(host string) {
 		return
 	}
 
-	log.Println("dr", host)
-	d.recordMap[host] = true
+	log.Println("add", host)
+	domain := getTopDomain(host)
+	if domain != "" {
+		d.defaultMap[domain] = true
+	} else {
+		d.recordMap[host] = true
+	}
+
 	d.saveDirect()
 }
 
