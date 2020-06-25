@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"strconv"
@@ -27,34 +28,67 @@ func handleConnect(conn net.Conn) {
 	if err != nil {
 		return
 	}
-	log.Println(req.host)
 
 	if req.isHttps {
 		fmt.Fprint(conn, "HTTP/1.1 200 Connection Established\r\n\r\n")
 	}
 
-	remote, err := connectRemote(req)
-	if err != nil {
+	target, err := net.DialTimeout("tcp", req.addr, 100*time.Millisecond)
+	if err == nil && connectTarget(req, target) == nil {
+		//log.Println("direct", req.host)
+		direct.addDirect(req.host)
 		return
 	}
 
-	defer remote.Close()
-
-	if !req.isHttps {
-		remote.Write(req.data)
+	if !direct.isDirect(req.host) {
+		target, err = ss.connect(req.addr)
+		if err == nil && connectTarget(req, target) == nil {
+			//log.Println("proxy", req.host)
+			return
+		}
 	}
 
-	go copyStream(req.conn, remote)
-	copyStream(remote, req.conn)
+	if err != nil {
+		log.Println("all connect fail, bad network", req.host)
+	}
 }
 
-// 连接远端
-func connectRemote(req *HttpRequest) (net.Conn, error) {
-	// 如果域名不合法或为IP地址，走直连
-	if !strings.Contains(req.host, ".") || net.ParseIP(req.host) != nil {
-		return net.DialTimeout("tcp", req.addr, 2*time.Second)
+// 连接目标地址
+func connectTarget(req *HttpRequest, target net.Conn) error {
+	defer target.Close()
+
+	if !req.isHttps {
+		_, err := target.Write(req.data)
+		if err != nil {
+			return err
+		}
 	}
-	return ss.connect(req.addr)
+
+	_, respN := relay(req.conn, target)
+	if respN == 0 {
+		return &Error{"read response data error"}
+	}
+
+	return nil
+}
+
+// 数据传输
+func relay(left, right net.Conn) (int64, int64) {
+	ch := make(chan int64)
+
+	go func() {
+		reqN, _ := io.Copy(right, left)
+		right.SetDeadline(time.Now())
+		left.SetDeadline(time.Now())
+		ch <- reqN
+	}()
+
+	respN, _ := io.Copy(left, right)
+	right.SetDeadline(time.Now())
+	left.SetDeadline(time.Now())
+	reqN := <-ch
+
+	return reqN, respN
 }
 
 // 流复制
