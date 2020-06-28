@@ -1,4 +1,4 @@
-# ss代理
+## ss代理
 
 配置文件 config.json
 ```
