@@ -28,48 +28,29 @@ func handleConnect(conn net.Conn) {
 	if err != nil {
 		return
 	}
+	log.Println(req.host)
 
 	if req.isHttps {
 		fmt.Fprint(conn, "HTTP/1.1 200 Connection Established\r\n\r\n")
 	}
 
-	target, err := net.DialTimeout("tcp", req.addr, 100*time.Millisecond)
-	if err == nil && connectTarget(req, target) == nil {
-		log.Println("dr", req.host)
-		direct.addDirect(req.host)
+	remote, err := ss.connect(req.addr)
+	if err != nil {
 		return
 	}
 
-	if !direct.isDirect(req.host) {
-		target, err = ss.connect(req.addr)
-		if err == nil && connectTarget(req, target) == nil {
-			log.Println("ss", req.host)
+	defer remote.Close()
+
+	if !req.isHttps {
+		_, err = remote.Write(req.data)
+		if err != nil {
 			return
 		}
 	}
 
-	if err != nil {
-		log.Println("connect fail", req.host)
-	}
-}
-
-// 连接目标地址
-func connectTarget(req *HttpRequest, target net.Conn) error {
-	defer target.Close()
-
-	if !req.isHttps {
-		_, err := target.Write(req.data)
-		if err != nil {
-			return err
-		}
-	}
-
-	_, respN := relay(req.conn, target)
-	if respN == 0 {
-		return &Error{"read response data error"}
-	}
-
-	return nil
+	relay(req.conn, remote)
+	//go copyStream(req.conn, remote)
+	//copyStream(remote, req.conn)
 }
 
 // 数据传输
