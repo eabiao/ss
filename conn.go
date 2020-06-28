@@ -38,7 +38,6 @@ func handleConnect(conn net.Conn) {
 	if err != nil {
 		return
 	}
-
 	defer remote.Close()
 
 	if !req.isHttps {
@@ -49,8 +48,6 @@ func handleConnect(conn net.Conn) {
 	}
 
 	relay(req.conn, remote)
-	//go copyStream(req.conn, remote)
-	//copyStream(remote, req.conn)
 }
 
 // 数据传输
@@ -72,29 +69,7 @@ func relay(left, right net.Conn) (int64, int64) {
 	return reqN, respN
 }
 
-// 流复制
-func copyStream(src, dst net.Conn) {
-	var buff = connBuff.Get()
-	defer func() {
-		connBuff.Put(buff)
-		src.SetDeadline(time.Now())
-		dst.SetDeadline(time.Now())
-	}()
-
-	for {
-		readN, err := src.Read(buff[:])
-		if err != nil {
-			return
-		}
-
-		_, err = dst.Write(buff[0:readN])
-		if err != nil {
-			return
-		}
-	}
-}
-
-// 解析请求信息
+// 解析请求
 func parseRequest(client net.Conn) (*HttpRequest, error) {
 
 	var buff = httpBuff.Get()
@@ -106,8 +81,8 @@ func parseRequest(client net.Conn) (*HttpRequest, error) {
 	}
 	data := buff[:readN]
 
-	var addr string
 	var isHttps bool
+	var addr string
 
 	for _, line := range strings.Split(string(data), "\r\n") {
 		if strings.HasPrefix(line, "CONNECT") {

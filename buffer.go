@@ -2,7 +2,6 @@ package main
 
 var (
 	httpBuff = newBuffPool(512, 1024)
-	connBuff = newBuffPool(512, 4096)
 )
 
 // 缓冲区池
