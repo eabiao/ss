@@ -4,9 +4,9 @@
 ```
 {
     "listen": "127.0.0.1:7777",
-    "server": "ip:port",
-    "method": "AEAD_CHACHA20_POLY1305",
-    "passwd": "password"
+    "server": "SERVER_IP:SERVER_PORT",
+    "method": "rc4-md5",
+    "passwd": "PASSWORD!"
 }
 ```
 
