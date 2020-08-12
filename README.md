@@ -51,5 +51,8 @@ rsrc.exe -manifest assets/manifest.txt -ico assets/ss.ico -o main.syso
 
 build
 ```
-./build.sh
+rm -rf bin/*.exe
+go build -ldflags "-s -w" -o bin/tmp.exe
+upx -9 -o bin/ss.exe bin/tmp.exe
+rm -f bin/tmp.exe
 ```
