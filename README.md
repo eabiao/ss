@@ -49,9 +49,7 @@ go get github.com/akavel/rsrc
 rsrc.exe -manifest assets/manifest.txt -ico assets/ss.ico -o main.syso
 ```
 
-编译&压缩
+build
 ```
-rm -f bin/*.exe
-go build -ldflags "-s -w" -o bin/a.exe
-upx -9 -o bin/ss.exe bin/a.exe
+./build.sh
 ```
