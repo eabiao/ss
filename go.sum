@@ -1,5 +1,7 @@
 github.com/aead/chacha20 v0.0.0-20180709150244-8b13a72661da h1:KjTM2ks9d14ZYCvmHS9iAKVt9AyzRSqNU1qabPih5BY=
 github.com/aead/chacha20 v0.0.0-20180709150244-8b13a72661da/go.mod h1:eHEWzANqSiWQsof+nXEI9bUVUyV6F53Fp89EuCh2EAA=
+github.com/akavel/rsrc v0.9.0 h1:HwUDC0+tMFWqN4D5G+o5siGD4oVsC3jn6zM8ocjc3nY=
+github.com/akavel/rsrc v0.9.0/go.mod h1:uLoCtb9J+EyAqh+26kdrTgmzRBFPGOolLWKpdxkKq+c=
 github.com/riobard/go-bloom v0.0.0-20200213042214-218e1707c495 h1:p7xbxYTzzfXghR1kpsJDeoVVRRWAotKc8u7FP/N48rU=
 github.com/riobard/go-bloom v0.0.0-20200213042214-218e1707c495/go.mod h1:HgjTstvQsPGkxUsCd2KWxErBblirPizecHcpD3ffK+s=
 github.com/shadowsocks/go-shadowsocks2 v0.1.2 h1:R8Ula/Z9duCmHyD89mGT4Do4nkRA6jnqIO8shn1PmTg=

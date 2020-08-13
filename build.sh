@@ -7,7 +7,7 @@ UPX=/mnt/d/soft/upx-3.96-win64/upx.exe
 
 $GO generate
 
-go get github.com/akavel/rsrc
+$GO get github.com/akavel/rsrc
 rsrc.exe -manifest manifest.txt -ico plane.ico -o main.syso
 rm -f manifest.txt
 
