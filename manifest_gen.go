@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-//go:generate go run icon_gen.go
+//go:generate go run manifest_gen.go
 func main() {
 	genIconManifest("manifest.txt")
 }
