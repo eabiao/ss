@@ -5,7 +5,7 @@
 {
     "listen": "127.0.0.1:7777",
     "server": "SERVER_IP:SERVER_PORT",
-    "method": "rc4-md5",
+    "method": "aes-256-cfb",
     "passwd": "PASSWORD!"
 }
 ```
