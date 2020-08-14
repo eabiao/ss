@@ -1,6 +1,6 @@
-## ss代理
+## ss client
 
-配置文件config.json
+config.json
 ```
 {
     "listen": "127.0.0.1:7777",
@@ -10,12 +10,12 @@
 }
 ```
 
-构建
+build
 ```
 ./build.sh
 ```
 
-ico图标文件生成
+png to ico
 ```
 yum install icoutils
 icotool -c aa.png -o aa.ico
