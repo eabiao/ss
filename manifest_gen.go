@@ -10,7 +10,7 @@ import (
 
 //go:generate go run manifest_gen.go
 func main() {
-	genIconManifest("manifest.txt")
+	genIconManifest("ico.manifest")
 }
 
 func genIconManifest(file string) {
